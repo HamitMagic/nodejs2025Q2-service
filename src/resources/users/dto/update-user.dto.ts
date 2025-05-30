@@ -4,6 +4,6 @@ import { CreateUserDto } from './create-user.dto';
 export class UpdateUserDto extends PartialType(CreateUserDto) {}
 
 export class UpdatePasswordDto {
-  oldPassword: string; // previous password
-  newPassword: string; // new password
+  oldPassword: string;
+  newPassword: string;
 }
