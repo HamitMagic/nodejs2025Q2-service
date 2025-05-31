@@ -1,11 +1,11 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: Home Library Service
   description: Home music library service
   version: 1.0.0
 
 servers:
-  - url: /api
+  - url: /
 
 components:
   schemas:
@@ -139,8 +139,8 @@ paths:
                   type: string
                   description: Password
               required:
-                - user
                 - login
+                - password
       responses:
         200:
           description: Successful login.

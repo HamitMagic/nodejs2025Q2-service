@@ -1,5 +1,15 @@
+import { IsArray, IsNotEmpty } from 'class-validator';
+
 export class CreateFavoriteDto {
-  artists: string[]; // favorite artists ids
-  albums: string[]; // favorite albums ids
-  tracks: string[]; // favorite tracks ids
+  @IsArray()
+  @IsNotEmpty()
+  artists: string[];
+
+  @IsNotEmpty()
+  @IsArray()
+  albums: string[];
+
+  @IsNotEmpty()
+  @IsArray()
+  tracks: string[];
 }

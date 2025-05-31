@@ -1,13 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
-import { Artist } from './entities/artist.entity';
 import * as uuId from 'uuid';
 import { validateUUID } from 'src/utils/utils';
+import { albums, artists, favorite, tracks } from 'src/db/tdb';
 
 @Injectable()
 export class ArtistsService {
-  private artists: Artist[] = [];
+  constructor() {}
 
   create(createArtistDto: CreateArtistDto) {
     if (createArtistDto.grammy === undefined) {
@@ -16,17 +16,17 @@ export class ArtistsService {
       throw new HttpException('name not provided', HttpStatus.BAD_REQUEST);
     }
     const id = uuId.v4();
-    this.artists.push({ ...createArtistDto, id });
+    artists.push({ ...createArtistDto, id });
     return { ...createArtistDto, id };
   }
 
   findAll() {
-    return this.artists;
+    return artists;
   }
 
   findOne(id: string) {
     validateUUID(id);
-    const currentArtist = this.artists.find((artist) => artist.id === id);
+    const currentArtist = artists.find((artist) => artist.id === id);
     if (!currentArtist) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
@@ -35,7 +35,7 @@ export class ArtistsService {
 
   update(id: string, updateArtistDto: UpdateArtistDto) {
     validateUUID(id);
-    const currentArtist = this.artists.find((artist) => artist.id === id);
+    const currentArtist = artists.find((artist) => artist.id === id);
     if (!currentArtist) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
@@ -51,11 +51,18 @@ export class ArtistsService {
 
   remove(id: string) {
     validateUUID(id);
-    const currentArtist = this.artists.find((artist) => artist.id === id);
+    const currentArtist = artists.find((artist) => artist.id === id);
     if (!currentArtist) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-    this.artists = this.artists.filter((artist) => artist.id !== id);
-    // throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
+    albums.forEach((album) => {
+      if (album.artistId === id) album.artistId = null;
+    });
+    tracks.forEach((track) => {
+      if (track.artistId === id) track.artistId = null;
+    });
+    favorite.artists = favorite.artists.filter((artistId) => artistId !== id);
+    const index = artists.findIndex((artist) => artist.id === id);
+    artists.splice(index, 1);
   }
 }

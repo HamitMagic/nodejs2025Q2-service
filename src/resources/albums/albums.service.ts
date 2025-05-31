@@ -1,13 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
-import { Album } from './entities/album.entity';
 import * as uuId from 'uuid';
 import { validateUUID } from 'src/utils/utils';
+import { albums, tracks, favorite } from 'src/db/tdb';
 
 @Injectable()
 export class AlbumsService {
-  private albums: Album[] = [];
+  constructor() {}
 
   create(createAlbumDto: CreateAlbumDto) {
     if (!createAlbumDto.name) {
@@ -27,17 +27,17 @@ export class AlbumsService {
       id: uuId.v4(),
       artistId: createAlbumDto.artistId ?? null,
     };
-    this.albums.push(newAlbum);
+    albums.push(newAlbum);
     return newAlbum;
   }
 
   findAll() {
-    return this.albums;
+    return albums;
   }
 
   findOne(id: string) {
     validateUUID(id);
-    const currentAlbum = this.albums.find((album) => album.id === id);
+    const currentAlbum = albums.find((album) => album.id === id);
     if (!currentAlbum) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
@@ -46,7 +46,7 @@ export class AlbumsService {
 
   update(id: string, updateAlbumDto: UpdateAlbumDto) {
     validateUUID(id);
-    const currentAlbum = this.albums.find((album) => album.id === id);
+    const currentAlbum = albums.find((album) => album.id === id);
     if (!currentAlbum) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
@@ -64,11 +64,23 @@ export class AlbumsService {
 
   remove(id: string) {
     validateUUID(id);
-    const currentAlbum = this.albums.find((album) => album.id === id);
+    const currentAlbum = albums.find((album) => album.id === id);
     if (!currentAlbum) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-    this.albums = this.albums.filter((album) => album.id !== id);
-    throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
+    // this.trackService.setNullToAlbum(id);
+    tracks.forEach((track) => {
+      if (track.albumId === id) track.albumId = null;
+    });
+    favorite.albums = favorite.albums.filter((albumId) => albumId !== id);
+    const index = albums.findIndex((album) => album.id === id);
+    albums.splice(index, 1);
+  }
+
+  setNullToArtist(artistId: string) {
+    validateUUID(artistId);
+    albums.forEach((album) => {
+      if (album.artistId === artistId) album.artistId = null;
+    });
   }
 }

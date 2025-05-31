@@ -4,10 +4,10 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import * as uuId from 'uuid';
 import { validateUUID } from 'src/utils/utils';
+import { users } from 'src/db/tdb';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
   private deletePassword(user: User) {
     return {
       login: user.login,
@@ -17,6 +17,7 @@ export class UsersService {
       updatedAt: user.updatedAt,
     };
   }
+
   create(createUserDto: CreateUserDto) {
     if (!createUserDto.login) {
       throw new HttpException('login not provided', HttpStatus.BAD_REQUEST);
@@ -30,17 +31,17 @@ export class UsersService {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    this.users.push(newUser); // I know that it creates many same users, TODO: connect DB fix problem add validation
+    users.push(newUser); // I know that it creates many same users, TODO: connect DB fix problem add validation
     return this.deletePassword(newUser);
   }
 
   findAll() {
-    return this.users.map((user) => this.deletePassword(user));
+    return users.map((user) => this.deletePassword(user));
   }
 
   findOne(id: string) {
     validateUUID(id);
-    const currentUser = this.users.find((user) => user.id === id);
+    const currentUser = users.find((user) => user.id === id);
     if (!currentUser) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
@@ -48,7 +49,7 @@ export class UsersService {
   }
 
   findByLoginPassword(body: CreateUserDto) {
-    const currentUser = this.users.find(
+    const currentUser = users.find(
       (user) => user.password === body.password && user.login === body.password,
     );
     if (!currentUser) {
@@ -59,30 +60,26 @@ export class UsersService {
 
   update(id: string, updateUserDto: UpdateUserDto) {
     validateUUID(id);
-    const currentUser = this.users.find((user) => user.id === id);
+    const currentUser = users.find((user) => user.id === id);
     if (!currentUser) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     } else if (currentUser.password !== updateUserDto.oldPassword) {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
-    this.users = this.users.map((user) => {
-      if (user.id === id) {
-        user.password = updateUserDto.newPassword;
-        user.updatedAt = Date.now();
-        user.version += 1;
-      }
-      return user;
-    });
+    currentUser.password = updateUserDto.newPassword;
+    currentUser.version += 1;
+    currentUser.updatedAt = Date.now();
     return this.deletePassword(currentUser);
   }
 
   remove(id: string) {
     validateUUID(id);
-    const currentUser = this.users.find((user) => user.id === id);
+    const currentUser = users.find((user) => user.id === id);
     if (!currentUser) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-    this.users = this.users.filter((user) => user.id !== id);
+    const index = users.findIndex((user) => user.id !== id);
+    users.splice(index, 1);
     // throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
   }
 }

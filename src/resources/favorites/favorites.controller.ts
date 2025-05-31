@@ -2,44 +2,55 @@ import {
   Controller,
   Get,
   Post,
-  Body,
-  Patch,
   Param,
   Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FavoritesService } from './favorites.service';
-import { CreateFavoriteDto } from './dto/create-favorite.dto';
-import { UpdateFavoriteDto } from './dto/update-favorite.dto';
 
 @Controller('favs')
 export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
-
-  @Post()
-  create(@Body() createFavoriteDto: CreateFavoriteDto) {
-    return this.favoritesService.create(createFavoriteDto);
-  }
 
   @Get()
   findAll() {
     return this.favoritesService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.favoritesService.findOne(+id);
+  @Post('track/:id')
+  @HttpCode(HttpStatus.CREATED)
+  createTrack(@Param('id') trackId: string) {
+    return this.favoritesService.addTrack(trackId);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateFavoriteDto: UpdateFavoriteDto,
-  ) {
-    return this.favoritesService.update(+id, updateFavoriteDto);
+  @Delete('track/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeTrack(@Param('id') trackId: string) {
+    return this.favoritesService.removeTrack(trackId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.favoritesService.remove(+id);
+  @Post('artist/:id')
+  @HttpCode(HttpStatus.CREATED)
+  createArtist(@Param('id') artistId: string) {
+    return this.favoritesService.addArtist(artistId);
+  }
+
+  @Delete('artist/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeArtist(@Param('id') artistId: string) {
+    return this.favoritesService.removeArtist(artistId);
+  }
+
+  @Post('album/:id')
+  @HttpCode(HttpStatus.CREATED)
+  create(@Param('id') albumId: string) {
+    return this.favoritesService.addAlbum(albumId);
+  }
+
+  @Delete('album/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') albumId: string) {
+    return this.favoritesService.removeAlbum(albumId);
   }
 }
