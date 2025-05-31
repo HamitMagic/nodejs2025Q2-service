@@ -50,8 +50,6 @@ export class AlbumsService {
     if (!currentAlbum) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-    console.log(updateAlbumDto, 'update');
-    console.log(currentAlbum, 'current');
     if (updateAlbumDto.artistId) {
       currentAlbum.artistId = updateAlbumDto.artistId;
     }
