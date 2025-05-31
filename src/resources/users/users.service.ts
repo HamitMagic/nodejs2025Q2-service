@@ -80,6 +80,5 @@ export class UsersService {
     }
     const index = users.findIndex((user) => user.id !== id);
     users.splice(index, 1);
-    // throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
   }
 }
