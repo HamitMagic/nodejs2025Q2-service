@@ -1,7 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
+import { validate } from 'uuid';
 
 export function validateUUID(id: string) {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(id)) throw new BadRequestException('Invalid id');
+  console.log(id, 'uor id');
+  if (validate(id)) return;
+  throw new BadRequestException('Invalid id');
 }

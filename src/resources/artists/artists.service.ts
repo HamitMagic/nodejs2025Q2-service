@@ -28,17 +28,15 @@ export class ArtistsService {
     validateUUID(id);
     const currentArtist = this.artists.find((artist) => artist.id === id);
     if (!currentArtist) {
-      throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-    return this.artists.find((artist) => artist.id === id);
+    return currentArtist;
   }
 
   update(id: string, updateArtistDto: UpdateArtistDto) {
     validateUUID(id);
     const currentArtist = this.artists.find((artist) => artist.id === id);
     if (!currentArtist) {
-      throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
-    } else if (!currentArtist) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
 
@@ -58,6 +56,6 @@ export class ArtistsService {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
     this.artists = this.artists.filter((artist) => artist.id !== id);
-    throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
+    // throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
   }
 }

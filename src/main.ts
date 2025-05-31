@@ -2,16 +2,17 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-// import { join, parse } from 'node:path';
-// import { readFile } from 'node:fs/promises';
+import { join, parse } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const PORT = process.env.PORT ?? 4000;
   const app = await NestFactory.create(AppModule);
-  // const filePath = join(__dirname, '..', 'doc', 'api.yaml');
-  // const file = await readFile(filePath, 'utf-8');
-  // const document = parse(file);
-  // SwaggerModule.setup('/doc', app, document);
+  const filePath = join(__dirname, '..', 'doc', 'api.yaml');
+  const file = await readFile(filePath, 'utf-8');
+  const document = parse(file) as unknown as OpenAPIObject;
+  SwaggerModule.setup('/doc', app, document);
   app.enableCors({
     origin: '*',
     credentials: true,

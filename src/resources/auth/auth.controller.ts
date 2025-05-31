@@ -9,7 +9,7 @@ export class AuthController {
   @Post()
   create(
     @Body()
-    body: Omit<CreateUserDto, 'id' | 'version' | 'createdAt' | 'updatedAt'>,
+    body: CreateUserDto,
   ) {
     return this.userService.create(body);
   }
@@ -17,7 +17,7 @@ export class AuthController {
   @Post()
   login(
     @Body()
-    body: Omit<CreateUserDto, 'id' | 'version' | 'createdAt' | 'updatedAt'>,
+    body: CreateUserDto,
   ) {
     return this.userService.findByLoginPassword(body);
   }

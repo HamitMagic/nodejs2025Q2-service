@@ -69,10 +69,11 @@ export class UsersService {
       if (user.id === id) {
         user.password = updateUserDto.newPassword;
         user.updatedAt = Date.now();
+        user.version += 1;
       }
       return user;
     });
-    return;
+    return this.deletePassword(currentUser);
   }
 
   remove(id: string) {
@@ -82,6 +83,6 @@ export class UsersService {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
     this.users = this.users.filter((user) => user.id !== id);
-    throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
+    // throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
   }
 }
