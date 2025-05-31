@@ -1,8 +1,9 @@
+import { IsString } from 'class-validator';
+
 export class CreateUserDto {
+  @IsString()
   login: string;
+
+  @IsString()
   password: string;
-  id: string;
-  version: number;
-  createdAt: number;
-  updatedAt: number;
 }

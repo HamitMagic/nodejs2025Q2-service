@@ -1,74 +1,71 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdatePasswordDto } from './dto/update-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './entities/user.entity';
 import * as uuId from 'uuid';
-
-let users: CreateUserDto[] = [];
+import { validateUUID } from 'src/utils/utils';
 
 @Injectable()
 export class UsersService {
-  create(
-    createUserDto: Omit<
-      CreateUserDto,
-      'id' | 'version' | 'createdAt' | 'updatedAt'
-    >,
-  ) {
+  private users: User[] = [];
+  private deletePassword(user: User) {
+    return {
+      login: user.login,
+      id: user.id,
+      version: user.version,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+  create(createUserDto: CreateUserDto) {
     if (!createUserDto.login) {
       throw new HttpException('login not provided', HttpStatus.BAD_REQUEST);
     } else if (!createUserDto.password) {
       throw new HttpException('password not provided', HttpStatus.BAD_REQUEST);
     }
-    users.push({
+    const newUser = {
       ...createUserDto,
       id: uuId.v4(),
       version: 1,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    }); // I know that it creates many same users, TODO: connect DB fix problem add validation
-    return createUserDto;
+    };
+    this.users.push(newUser); // I know that it creates many same users, TODO: connect DB fix problem add validation
+    return this.deletePassword(newUser);
   }
 
   findAll() {
-    return users.map((user) => {
-      delete user.password; //deleting password for secure
-      return user;
-    });
+    return this.users.map((user) => this.deletePassword(user));
   }
 
   findOne(id: string) {
-    const currentUser = users.find((user) => user.id === id);
-    if (uuId.validate(id)) {
-      throw new HttpException('UserId is invalid', HttpStatus.BAD_REQUEST);
-    } else if (!currentUser) {
+    validateUUID(id);
+    const currentUser = this.users.find((user) => user.id === id);
+    if (!currentUser) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-    delete currentUser.password;
-    return currentUser;
+    return this.deletePassword(currentUser);
   }
 
-  findByLoginPassword(
-    body: Omit<CreateUserDto, 'id' | 'version' | 'createdAt' | 'updatedAt'>,
-  ) {
-    const currentUser = users.find(
+  findByLoginPassword(body: CreateUserDto) {
+    const currentUser = this.users.find(
       (user) => user.password === body.password && user.login === body.password,
     );
     if (!currentUser) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-
-    return currentUser;
+    return this.deletePassword(currentUser);
   }
 
-  update(id: string, updateUserDto: UpdatePasswordDto) {
-    const currentUser = users.find((user) => user.id === id);
-    if (uuId.validate(id)) {
-      throw new HttpException('UserId is invalid', HttpStatus.BAD_REQUEST);
-    } else if (!currentUser) {
+  update(id: string, updateUserDto: UpdateUserDto) {
+    validateUUID(id);
+    const currentUser = this.users.find((user) => user.id === id);
+    if (!currentUser) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     } else if (currentUser.password !== updateUserDto.oldPassword) {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
-    users = users.map((user) => {
+    this.users = this.users.map((user) => {
       if (user.id === id) {
         user.password = updateUserDto.newPassword;
         user.updatedAt = Date.now();
@@ -79,13 +76,12 @@ export class UsersService {
   }
 
   remove(id: string) {
-    const currentUser = users.find((user) => user.id === id);
-    if (uuId.validate(id)) {
-      throw new HttpException('UserId is invalid', HttpStatus.BAD_REQUEST);
-    } else if (!currentUser) {
+    validateUUID(id);
+    const currentUser = this.users.find((user) => user.id === id);
+    if (!currentUser) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
-    users = users.filter((user) => user.id !== id);
+    this.users = this.users.filter((user) => user.id !== id);
     throw new HttpException('Deleted', HttpStatus.NO_CONTENT);
   }
 }
