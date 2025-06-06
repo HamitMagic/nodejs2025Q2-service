@@ -1,43 +1,78 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
-import * as uuId from 'uuid';
 import { validateUUID } from 'src/utils/utils';
-import { albums, artists, favorite, tracks } from 'src/db/tdb';
+import { ERRORS } from 'src/constants/errorMessages';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Artist } from './entities/artist.entity';
+import { In, Repository } from 'typeorm';
+import { Favorite } from '../favorites/entities/favorite.entity';
+import { Track } from '../tracks/entities/track.entity';
+import { Album } from '../albums/entities/album.entity';
 
 @Injectable()
 export class ArtistsService {
-  constructor() {}
+  constructor(
+    @InjectRepository(Artist)
+    private readonly artistsRepository: Repository<Artist>,
 
-  create(createArtistDto: CreateArtistDto) {
-    if (createArtistDto.grammy === undefined) {
-      throw new HttpException('grammy not provided', HttpStatus.BAD_REQUEST);
-    } else if (!createArtistDto.name) {
-      throw new HttpException('name not provided', HttpStatus.BAD_REQUEST);
+    @InjectRepository(Album)
+    private readonly albumsRepository: Repository<Album>,
+
+    @InjectRepository(Track)
+    private readonly tracksRepository: Repository<Track>,
+
+    @InjectRepository(Favorite)
+    private readonly favoritesRepository: Repository<Favorite>,
+  ) {}
+
+  async create(createArtistDto: CreateArtistDto) {
+    if (!createArtistDto.name) {
+      throw new HttpException(
+        ERRORS.notProvided('name'),
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    const id = uuId.v4();
-    artists.push({ ...createArtistDto, id });
-    return { ...createArtistDto, id };
+    const newArtist = this.artistsRepository.create({
+      name: createArtistDto.name,
+      grammy: createArtistDto.grammy ?? false,
+    });
+    const result = await this.artistsRepository.save(newArtist);
+    return result;
   }
 
-  findAll() {
-    return artists;
+  async findAll() {
+    return this.artistsRepository.find();
   }
 
-  findOne(id: string) {
+  async findOne(id: string) {
     validateUUID(id);
-    const currentArtist = artists.find((artist) => artist.id === id);
+    const currentArtist = await this.artistsRepository.findOne({
+      where: { id },
+    });
     if (!currentArtist) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('Artist'), HttpStatus.NOT_FOUND);
     }
     return currentArtist;
   }
 
-  update(id: string, updateArtistDto: UpdateArtistDto) {
+  async update(id: string, updateArtistDto: UpdateArtistDto) {
     validateUUID(id);
-    const currentArtist = artists.find((artist) => artist.id === id);
+    if (
+      (updateArtistDto.grammy === undefined ||
+        updateArtistDto.grammy === null) &&
+      !updateArtistDto.name
+    ) {
+      throw new HttpException(
+        ERRORS.notProvided('name or grammy'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const currentArtist = await this.artistsRepository.findOne({
+      where: { id },
+    });
     if (!currentArtist) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('Artist'), HttpStatus.NOT_FOUND);
     }
 
     if (updateArtistDto.grammy !== undefined) {
@@ -46,23 +81,28 @@ export class ArtistsService {
     if (updateArtistDto.name !== undefined) {
       currentArtist.name = updateArtistDto.name;
     }
-    return currentArtist;
+
+    const result = await this.artistsRepository.save(currentArtist);
+    return result;
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     validateUUID(id);
-    const currentArtist = artists.find((artist) => artist.id === id);
+    const currentArtist = await this.artistsRepository.findOne({
+      where: { id },
+    });
     if (!currentArtist) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('Artist'), HttpStatus.NOT_FOUND);
     }
-    albums.forEach((album) => {
-      if (album.artistId === id) album.artistId = null;
+    const favsWithArtist = await this.favoritesRepository.find({
+      where: { artists: In([id]) },
     });
-    tracks.forEach((track) => {
-      if (track.artistId === id) track.artistId = null;
-    });
-    favorite.artists = favorite.artists.filter((artistId) => artistId !== id);
-    const index = artists.findIndex((artist) => artist.id === id);
-    artists.splice(index, 1);
+    for (const favorite of favsWithArtist) {
+      favorite.artists = favorite.artists.filter((artistId) => artistId !== id);
+      await this.favoritesRepository.save(favorite);
+    }
+
+    await this.artistsRepository.delete({ id });
+    return { deleted: true };
   }
 }

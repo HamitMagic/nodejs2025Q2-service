@@ -9,11 +9,20 @@ import { validateUUID } from 'src/utils/utils';
 import { ArtistsService } from '../artists/artists.service';
 import { AlbumsService } from '../albums/albums.service';
 import { TracksService } from '../tracks/tracks.service';
-import { favorite, artists, tracks, albums } from 'src/db/tdb';
+import { Repository } from 'typeorm';
+import { Favorite } from './entities/favorite.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Track } from '../tracks/entities/track.entity';
+import { Artist } from '../artists/entities/artist.entity';
+import { Album } from '../albums/entities/album.entity';
+import { ERRORS } from 'src/constants/errorMessages';
 
 @Injectable()
 export class FavoritesService {
   constructor(
+    @InjectRepository(Favorite)
+    private readonly favoritesRepository: Repository<Favorite>,
+
     @Inject(forwardRef(() => ArtistsService))
     private readonly artistsService: ArtistsService,
     @Inject(forwardRef(() => AlbumsService))
@@ -22,69 +31,165 @@ export class FavoritesService {
     private readonly tracksService: TracksService,
   ) {}
 
-  findAll() {
+  private async getOrCreateFavorite() {
+    let fav = await this.favoritesRepository.findOne({});
+    if (!fav) {
+      fav = this.favoritesRepository.create({
+        artists: [],
+        albums: [],
+        tracks: [],
+      });
+      fav = await this.favoritesRepository.save(fav);
+    }
+    return fav;
+  }
+
+  async findAll() {
+    const favorites = await this.getOrCreateFavorite();
+    const entityMap = {
+      artists: this.artistsService,
+      albums: this.albumsService,
+      tracks: this.tracksService,
+    };
+    const resolvedEntities = await Promise.all(
+      Object.entries(entityMap).map(async ([key, service]) => {
+        const ids = favorites[key] || [];
+        const items = await Promise.all(
+          ids.map(async (id: string) => {
+            try {
+              return await service.findOne(id);
+            } catch {
+              return null;
+            }
+          }),
+        );
+        return [key, items];
+      }),
+    );
+    const result = Object.fromEntries(resolvedEntities);
     return {
-      artists: favorite.artists.map((artistId) =>
-        artists.find((artist) => artist.id === artistId),
+      artists: result.artists.filter(
+        (artist: Artist | null) => artist !== null,
       ),
-      albums: favorite.albums.map((albumId) =>
-        albums.find((album) => album.id === albumId),
-      ),
-      tracks: favorite.tracks.map((trackId) =>
-        tracks.find((track) => track.id === trackId),
-      ),
+      albums: result.albums.filter((album: Album | null) => album !== null),
+      tracks: result.tracks.filter((track: Track | null) => track !== null),
     };
   }
 
-  addArtist(id: string) {
+  async addArtist(id: string) {
     validateUUID(id);
+    let artist: Artist;
     try {
-      this.artistsService.findOne(id);
-      favorite.artists.push(id);
-    } catch (error) {
-      throw new HttpException('Unprocessable', HttpStatus.UNPROCESSABLE_ENTITY);
+      artist = await this.artistsService.findOne(id);
+    } catch {
+      throw new HttpException(
+        ERRORS.notFound('Artist'),
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
+    const fav = await this.getOrCreateFavorite();
+    if (fav.artists.includes(id)) {
+      throw new HttpException(
+        ERRORS.alreadyExists('Artist'),
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    fav.artists.push(id);
+    await this.favoritesRepository.save(fav);
+    return artist;
   }
-  addAlbum(id: string) {
+
+  async addAlbum(id: string) {
     validateUUID(id);
+    let album: Album;
     try {
-      this.albumsService.findOne(id);
-      favorite.albums.push(id);
-    } catch (error) {
-      throw new HttpException('Unprocessable', HttpStatus.UNPROCESSABLE_ENTITY);
+      album = await this.albumsService.findOne(id);
+    } catch {
+      throw new HttpException(
+        ERRORS.notFound('Album'),
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
+    const fav = await this.getOrCreateFavorite();
+    if (fav.albums.includes(id)) {
+      throw new HttpException(
+        ERRORS.alreadyExists('Album'),
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    fav.albums.push(id);
+    await this.favoritesRepository.save(fav);
+    return album;
   }
-  addTrack(id: string) {
+
+  async addTrack(id: string) {
     validateUUID(id);
+    let track: Track;
     try {
-      this.tracksService.findOne(id);
-      favorite.tracks.push(id);
-    } catch (error) {
-      throw new HttpException('Unprocessable', HttpStatus.UNPROCESSABLE_ENTITY);
+      track = await this.tracksService.findOne(id);
+    } catch {
+      throw new HttpException(
+        ERRORS.notFound('Track'),
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
+    const fav = await this.getOrCreateFavorite();
+    if (fav.tracks.includes(id)) {
+      throw new HttpException(
+        ERRORS.alreadyExists('Track'),
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    fav.tracks.push(id);
+    await this.favoritesRepository.save(fav);
+    return track;
   }
-  removeTrack(id: string) {
+
+  async removeTrack(id: string) {
     validateUUID(id);
-    if (!favorite.tracks.includes(id)) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    const fav = await this.getOrCreateFavorite();
+
+    if (!fav.tracks.includes(id)) {
+      throw new HttpException(
+        ERRORS.notFound('Track in favorites'),
+        HttpStatus.NOT_FOUND,
+      );
     }
-    const index = favorite.tracks.findIndex((el) => el === id);
-    favorite.tracks.splice(index, 1);
+
+    fav.tracks = fav.tracks.filter((trackId) => trackId !== id);
+    await this.favoritesRepository.save(fav);
+    return { removedId: id };
   }
-  removeAlbum(id: string) {
+
+  async removeAlbum(id: string) {
     validateUUID(id);
-    if (!favorite.albums.includes(id)) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    const fav = await this.getOrCreateFavorite();
+
+    if (!fav.albums.includes(id)) {
+      throw new HttpException(
+        ERRORS.notFound('Album in favorites'),
+        HttpStatus.NOT_FOUND,
+      );
     }
-    const index = favorite.albums.findIndex((el) => el === id);
-    favorite.albums.splice(index, 1);
+
+    fav.albums = fav.albums.filter((albumId) => albumId !== id);
+    await this.favoritesRepository.save(fav);
+    return { removedId: id };
   }
-  removeArtist(id: string) {
+
+  async removeArtist(id: string) {
     validateUUID(id);
-    if (!favorite.artists.includes(id)) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    const fav = await this.getOrCreateFavorite();
+
+    if (!fav.artists.includes(id)) {
+      throw new HttpException(
+        ERRORS.notFound('Artist in favorites'),
+        HttpStatus.NOT_FOUND,
+      );
     }
-    const index = favorite.artists.findIndex((el) => el === id);
-    favorite.artists.splice(index, 1);
+
+    fav.artists = fav.artists.filter((artistId) => artistId !== id);
+    await this.favoritesRepository.save(fav);
+    return { removedId: id };
   }
 }

@@ -1,54 +1,62 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
-import * as uuId from 'uuid';
 import { validateUUID } from 'src/utils/utils';
-import { albums, tracks, favorite } from 'src/db/tdb';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Album } from './entities/album.entity';
+import { In, Repository } from 'typeorm';
+import { ERRORS } from 'src/constants/errorMessages';
+import { Favorite } from '../favorites/entities/favorite.entity';
 
 @Injectable()
 export class AlbumsService {
-  constructor() {}
+  constructor(
+    @InjectRepository(Album)
+    private readonly albumsRepository: Repository<Album>,
 
-  create(createAlbumDto: CreateAlbumDto) {
+    @InjectRepository(Favorite)
+    private readonly favoritesRepository: Repository<Favorite>,
+  ) {}
+
+  async create(createAlbumDto: CreateAlbumDto) {
     if (!createAlbumDto.name) {
       throw new HttpException(
-        "album's name not provided",
+        ERRORS.notProvided("album's name"),
         HttpStatus.BAD_REQUEST,
       );
     } else if (!createAlbumDto.year) {
       throw new HttpException(
-        "album's year not provided",
+        ERRORS.notProvided("album's year"),
         HttpStatus.BAD_REQUEST,
       );
     }
-    const newAlbum = {
+    const newAlbum = this.albumsRepository.create({
       name: createAlbumDto.name,
       year: createAlbumDto.year,
-      id: uuId.v4(),
       artistId: createAlbumDto.artistId ?? null,
-    };
-    albums.push(newAlbum);
-    return newAlbum;
+    });
+    const result = await this.albumsRepository.save(newAlbum);
+    return result;
   }
 
-  findAll() {
-    return albums;
+  async findAll() {
+    return await this.albumsRepository.find();
   }
 
-  findOne(id: string) {
+  async findOne(id: string) {
     validateUUID(id);
-    const currentAlbum = albums.find((album) => album.id === id);
+    const currentAlbum = await this.albumsRepository.findOne({ where: { id } });
     if (!currentAlbum) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('Album'), HttpStatus.NOT_FOUND);
     }
     return currentAlbum;
   }
 
-  update(id: string, updateAlbumDto: UpdateAlbumDto) {
+  async update(id: string, updateAlbumDto: UpdateAlbumDto) {
     validateUUID(id);
-    const currentAlbum = albums.find((album) => album.id === id);
+    const currentAlbum = await this.albumsRepository.findOne({ where: { id } });
     if (!currentAlbum) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('Album'), HttpStatus.NOT_FOUND);
     }
     if (updateAlbumDto.artistId) {
       currentAlbum.artistId = updateAlbumDto.artistId;
@@ -59,28 +67,27 @@ export class AlbumsService {
     if (updateAlbumDto.year) {
       currentAlbum.year = updateAlbumDto.year;
     }
-    return currentAlbum;
+
+    const result = await this.albumsRepository.save(currentAlbum);
+    return result;
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     validateUUID(id);
-    const currentAlbum = albums.find((album) => album.id === id);
+    const currentAlbum = await this.albumsRepository.findOne({ where: { id } });
     if (!currentAlbum) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('Album'), HttpStatus.NOT_FOUND);
     }
-    // this.trackService.setNullToAlbum(id);
-    tracks.forEach((track) => {
-      if (track.albumId === id) track.albumId = null;
-    });
-    favorite.albums = favorite.albums.filter((albumId) => albumId !== id);
-    const index = albums.findIndex((album) => album.id === id);
-    albums.splice(index, 1);
-  }
 
-  setNullToArtist(artistId: string) {
-    validateUUID(artistId);
-    albums.forEach((album) => {
-      if (album.artistId === artistId) album.artistId = null;
+    const favsWithAlbums = await this.favoritesRepository.find({
+      where: { albums: In([id]) },
     });
+    for (const favorite of favsWithAlbums) {
+      favorite.artists = favorite.artists.filter((albumId) => albumId !== id);
+      await this.favoritesRepository.save(favorite);
+    }
+
+    await this.albumsRepository.delete({ id });
+    return { deleted: true };
   }
 }
