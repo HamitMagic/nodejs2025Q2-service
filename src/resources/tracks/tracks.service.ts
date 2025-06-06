@@ -1,55 +1,64 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
-import * as uuId from 'uuid';
 import { validateUUID } from 'src/utils/utils';
-import { favorite, tracks } from 'src/db/tdb';
+import { Track } from './entities/track.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Favorite } from '../favorites/entities/favorite.entity';
+import { In, Repository } from 'typeorm';
+import { ERRORS } from 'src/constants/errorMessages';
 
 @Injectable()
 export class TracksService {
-  constructor() {}
+  constructor(
+    @InjectRepository(Track)
+    private readonly tracksRepository: Repository<Track>,
 
-  create(createTrackDto: CreateTrackDto) {
-    if (!createTrackDto.duration) {
+    @InjectRepository(Favorite)
+    private readonly favoritesRepository: Repository<Favorite>,
+  ) {}
+
+  async create(createTrackDto: CreateTrackDto) {
+    const { name, duration, artistId, albumId } = createTrackDto;
+    if (!duration) {
       throw new HttpException(
-        'track duration not provided',
+        ERRORS.notProvided("Track's duration"),
         HttpStatus.BAD_REQUEST,
       );
-    } else if (!createTrackDto.name) {
+    } else if (!name) {
       throw new HttpException(
-        'track name not provided',
+        ERRORS.notProvided("Track's name"),
         HttpStatus.BAD_REQUEST,
       );
     }
-    const newTrack = {
-      duration: createTrackDto.duration,
-      name: createTrackDto.name,
-      id: uuId.v4(),
-      albumId: createTrackDto.albumId ?? null,
-      artistId: createTrackDto.artistId ?? null,
-    };
-    tracks.push(newTrack);
-    return newTrack;
+    const newTrack = this.tracksRepository.create({
+      duration,
+      name,
+      albumId: albumId ?? null,
+      artistId: artistId ?? null,
+    });
+    const result = await this.tracksRepository.save(newTrack);
+    return result;
   }
 
-  findAll() {
-    return tracks;
+  async findAll() {
+    return await this.tracksRepository.find();
   }
 
-  findOne(id: string) {
+  async findOne(id: string) {
     validateUUID(id);
-    const currentTrack = tracks.find((track) => track.id === id);
+    const currentTrack = await this.tracksRepository.findOne({ where: { id } });
     if (!currentTrack) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('track'), HttpStatus.NOT_FOUND);
     }
     return currentTrack;
   }
 
-  update(id: string, updateTrackDto: UpdateTrackDto) {
+  async update(id: string, updateTrackDto: UpdateTrackDto) {
     validateUUID(id);
-    const currentTrack = tracks.find((track) => track.id === id);
+    const currentTrack = await this.tracksRepository.findOne({ where: { id } });
     if (!currentTrack) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('track'), HttpStatus.NOT_FOUND);
     }
     if (updateTrackDto.albumId) {
       currentTrack.albumId = updateTrackDto.albumId;
@@ -63,31 +72,27 @@ export class TracksService {
     if (updateTrackDto.name) {
       currentTrack.name = updateTrackDto.name;
     }
-    return currentTrack;
+    const result = await this.tracksRepository.save(currentTrack);
+    return result;
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     validateUUID(id);
-    const currentTrack = tracks.find((track) => track.id === id);
+    const currentTrack = await this.tracksRepository.findOne({ where: { id } });
     if (!currentTrack) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('track'), HttpStatus.NOT_FOUND);
     }
-    favorite.tracks = favorite.tracks.filter((trackId) => trackId !== id);
-    const index = tracks.findIndex((track) => track.id === id);
-    tracks.splice(index, 1);
-  }
+    await this.tracksRepository.delete({ id });
 
-  setNullToArtist(artistId: string) {
-    validateUUID(artistId);
-    tracks.forEach((track) => {
-      if (track.artistId === artistId) track.artistId = null;
+    const allFavorites = await this.favoritesRepository.find({
+      where: { tracks: In([id]) },
     });
-  }
 
-  setNullToAlbum(albumId: string) {
-    validateUUID(albumId);
-    tracks.forEach((track) => {
-      if (track.albumId === albumId) track.albumId = null;
-    });
+    for (const fav of allFavorites) {
+      fav.tracks = fav.tracks.filter((trackId) => trackId !== id);
+      await this.favoritesRepository.save(fav);
+    }
+
+    return { deleted: true };
   }
 }

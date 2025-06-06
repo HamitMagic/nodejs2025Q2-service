@@ -2,12 +2,17 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import * as uuId from 'uuid';
 import { validateUUID } from 'src/utils/utils';
-import { users } from 'src/db/tdb';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ERRORS } from 'src/constants/errorMessages';
 
 @Injectable()
 export class UsersService {
+  constructor(
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+  ) {}
+
   private deletePassword(user: User) {
     return {
       login: user.login,
@@ -18,67 +23,87 @@ export class UsersService {
     };
   }
 
-  create(createUserDto: CreateUserDto) {
-    if (!createUserDto.login) {
-      throw new HttpException('login not provided', HttpStatus.BAD_REQUEST);
-    } else if (!createUserDto.password) {
-      throw new HttpException('password not provided', HttpStatus.BAD_REQUEST);
+  async create(createUserDto: CreateUserDto) {
+    const { login, password } = createUserDto;
+    if (!login) {
+      throw new HttpException(
+        ERRORS.notProvided('Login'),
+        HttpStatus.BAD_REQUEST,
+      );
+    } else if (!password) {
+      throw new HttpException(
+        ERRORS.notProvided('Password'),
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    const newUser = {
-      ...createUserDto,
-      id: uuId.v4(),
-      version: 1,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    users.push(newUser); // I know that it creates many same users, TODO: connect DB fix problem add validation
-    return this.deletePassword(newUser);
+    const existing = await this.usersRepository.findOne({ where: { login } });
+    if (existing) {
+      throw new HttpException(ERRORS.existingUser, HttpStatus.BAD_REQUEST);
+    }
+    const newUser = this.usersRepository.create({ login, password });
+    const result = await this.usersRepository.save(newUser);
+    return this.deletePassword(result);
   }
 
-  findAll() {
-    return users.map((user) => this.deletePassword(user));
+  async findAll() {
+    const allUsers = await this.usersRepository.find();
+    return allUsers.map((user) => this.deletePassword(user));
   }
 
-  findOne(id: string) {
+  async findOne(id: string) {
     validateUUID(id);
-    const currentUser = users.find((user) => user.id === id);
+    const currentUser = await this.usersRepository.findOne({ where: { id } });
     if (!currentUser) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
     }
     return this.deletePassword(currentUser);
   }
 
-  findByLoginPassword(body: CreateUserDto) {
-    const currentUser = users.find(
-      (user) => user.password === body.password && user.login === body.password,
-    );
+  async findByLoginPassword(body: CreateUserDto) {
+    const { login, password } = body;
+    if (!login || !password) {
+      throw new HttpException(
+        ERRORS.notProvided('login or password'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const currentUser = await this.usersRepository.findOne({
+      where: { login, password },
+    });
     if (!currentUser) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
     }
     return this.deletePassword(currentUser);
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
     validateUUID(id);
-    const currentUser = users.find((user) => user.id === id);
-    if (!currentUser) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
-    } else if (currentUser.password !== updateUserDto.oldPassword) {
-      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    const { oldPassword, newPassword } = updateUserDto;
+    if (!oldPassword || !newPassword) {
+      throw new HttpException(
+        ERRORS.notFound('old or new password'),
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    currentUser.password = updateUserDto.newPassword;
-    currentUser.version += 1;
-    currentUser.updatedAt = Date.now();
-    return this.deletePassword(currentUser);
+    const currentUser = await this.usersRepository.findOne({ where: { id } });
+    if (!currentUser) {
+      throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
+    } else if (currentUser.password !== oldPassword) {
+      throw new HttpException(ERRORS.notCorrectPassword, HttpStatus.FORBIDDEN);
+    }
+    currentUser.password = newPassword;
+    const result = await this.usersRepository.save(currentUser);
+    return this.deletePassword(result);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     validateUUID(id);
-    const currentUser = users.find((user) => user.id === id);
+    const currentUser = await this.usersRepository.findOne({ where: { id } });
     if (!currentUser) {
-      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+      throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
     }
-    const index = users.findIndex((user) => user.id !== id);
-    users.splice(index, 1);
+    await this.usersRepository.delete({ id });
+    return { deleted: true };
   }
 }
