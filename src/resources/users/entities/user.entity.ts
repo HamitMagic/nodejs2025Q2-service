@@ -1,14 +1,6 @@
-import { Favorite } from 'src/resources/favorites/entities/favorite.entity';
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Favorite } from "src/resources/favorites/entities/favorite.entity";
+import { Column, CreateDateColumn, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity({ name: 'users' })
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
