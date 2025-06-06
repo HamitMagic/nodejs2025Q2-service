@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    container_name: homeLibrary-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  app:
+    build: .
+    container_name: homeLibrary
+    depends_on:
+      - db
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASS: postgres
+      DATABASE_NAME: postgres
+    ports:
+      - "4000:4000"
+    networks:
+      - app-network
+
+volumes:
+  homeLibrary:
+
+networks:
+  app-network:
+    driver: bridge
