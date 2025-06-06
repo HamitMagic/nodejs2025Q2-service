@@ -8,9 +8,14 @@ import { TracksModule } from './resources/tracks/tracks.module';
 import { FavoritesModule } from './resources/favorites/favorites.module';
 import { AuthController } from './resources/auth/auth.controller';
 import { UsersService } from './resources/users/users.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { typeOrmConfig } from './config/typeorm.config';
 
 @Module({
   imports: [
+    TypeOrmModule.forRootAsync({
+      useFactory: typeOrmConfig,
+    }),
     UsersModule,
     ArtistsModule,
     AlbumsModule,
