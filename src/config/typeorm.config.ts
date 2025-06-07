@@ -1,5 +1,6 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import 'dotenv/config';
+import { join } from 'path';
 
 export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -10,7 +11,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   database: process.env.DATABASE_NAME ?? 'postgres',
   autoLoadEntities: true,
   synchronize: !!process.env.DATABASE_SYNCHRONIZE,
-  entities: ['src/resources/**/*.entity.ts'],
+  entities: [join(__dirname, '..', 'resources', '**', '*.entity.{ts,js}')],
   migrationsRun: !process.env.DATABASE_SYNCHRONIZE,
-  migrations: ['src/migrations/*.ts'],
+  migrations: [join(__dirname, '..', 'migrations', '*.{ts,js}')],
 });

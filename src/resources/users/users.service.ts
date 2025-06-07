@@ -18,8 +18,8 @@ export class UsersService {
       login: user.login,
       id: user.id,
       version: user.version,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.createdAt.getTime(),
+      updatedAt: user.updatedAt.getTime(),
     };
   }
 
@@ -36,11 +36,16 @@ export class UsersService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    const existing = await this.usersRepository.findOne({ where: { login } });
-    if (existing) {
-      throw new HttpException(ERRORS.existingUser, HttpStatus.BAD_REQUEST);
-    }
-    const newUser = this.usersRepository.create({ login, password });
+    // const existing = await this.usersRepository.findOne({ where: { login } });
+    // if (existing) {
+    //   throw new HttpException(ERRORS.existingUser, HttpStatus.BAD_REQUEST);
+    // }
+    const newUser = this.usersRepository.create({
+      login,
+      password,
+      // createdAt: new Date(),
+      // updatedAt: new Date(),
+    });
     const result = await this.usersRepository.save(newUser);
     return this.deletePassword(result);
   }
@@ -93,6 +98,8 @@ export class UsersService {
       throw new HttpException(ERRORS.notCorrectPassword, HttpStatus.FORBIDDEN);
     }
     currentUser.password = newPassword;
+    currentUser.version += 1;
+    currentUser.updatedAt = new Date(Date.now());
     const result = await this.usersRepository.save(currentUser);
     return this.deletePassword(result);
   }
@@ -103,7 +110,7 @@ export class UsersService {
     if (!currentUser) {
       throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
     }
-    await this.usersRepository.delete({ id });
+    return await this.usersRepository.delete({ id });
     return { deleted: true };
   }
 }

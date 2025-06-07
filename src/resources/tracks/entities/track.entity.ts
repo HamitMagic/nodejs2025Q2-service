@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-@Entity({ name: 'tracks' })
+@Entity({ name: 'track' })
 export class Track {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -27,16 +27,18 @@ export class Track {
 
   @ManyToOne(() => Artist, {
     nullable: true,
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
+    eager: true,
   })
   @JoinColumn({ name: 'artistId' })
   artist: Artist | null;
 
   @ManyToOne(() => Album, {
     nullable: true,
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
+    eager: true,
   })
   @JoinColumn({ name: 'albumId' })
   album: Album | null;

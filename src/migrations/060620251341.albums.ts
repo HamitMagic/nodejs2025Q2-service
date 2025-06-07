@@ -11,7 +11,7 @@ export class CreateAlbums060620251341 implements MigrationInterface {
 
     await queryRunner.createTable(
       new Table({
-        name: 'albums',
+        name: 'album',
         columns: [
           {
             name: 'id',
@@ -41,7 +41,7 @@ export class CreateAlbums060620251341 implements MigrationInterface {
       true,
     );
     await queryRunner.createForeignKey(
-      'albums',
+      'album',
       new TableForeignKey({
         columnNames: ['artistId'],
         referencedTableName: 'artists',
@@ -53,13 +53,13 @@ export class CreateAlbums060620251341 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner) {
-    const table = await queryRunner.getTable('albums');
+    const table = await queryRunner.getTable('album');
     const fk = table.foreignKeys.find(
       (el) => el.columnNames.indexOf('artistId') !== -1,
     );
     if (fk) {
-      await queryRunner.dropForeignKey('albums', fk);
+      await queryRunner.dropForeignKey('album', fk);
     }
-    await queryRunner.dropTable('albums');
+    await queryRunner.dropTable('album');
   }
 }

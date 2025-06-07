@@ -1,24 +1,32 @@
-import { Favorite } from "src/resources/favorites/entities/favorite.entity";
-import { Column, CreateDateColumn, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Favorite } from 'src/resources/favorites/entities/favorite.entity';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
+@Entity({ name: 'user' })
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   login: string;
 
   @Column()
   password: string;
 
-  @Column()
+  @Column({ default: 1 })
   version: number;
 
   @CreateDateColumn({ type: 'timestamp', name: 'createdAt' })
-  createdAt: number;
+  createdAt: Date;
 
   @CreateDateColumn({ type: 'timestamp', name: 'updatedAt' })
-  updatedAt: number;
+  updatedAt: Date;
 
   @Column({ type: 'uuid', nullable: true })
   favId: string | null;

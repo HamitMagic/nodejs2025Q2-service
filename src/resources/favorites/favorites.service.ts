@@ -30,9 +30,8 @@ export class FavoritesService {
     @Inject(forwardRef(() => TracksService))
     private readonly tracksService: TracksService,
   ) {}
-
   private async getOrCreateFavorite() {
-    let fav = await this.favoritesRepository.findOne({});
+    let fav = await this.favoritesRepository.findOneBy({});
     if (!fav) {
       fav = this.favoritesRepository.create({
         artists: [],

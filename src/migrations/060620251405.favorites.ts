@@ -6,7 +6,7 @@ export class CreateFavorites060620251405 implements MigrationInterface {
 
     await queryRunner.createTable(
       new Table({
-        name: 'favorites',
+        name: 'favs',
         columns: [
           {
             name: 'id',
@@ -43,6 +43,6 @@ export class CreateFavorites060620251405 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('favorites');
+    await queryRunner.dropTable('favs');
   }
 }

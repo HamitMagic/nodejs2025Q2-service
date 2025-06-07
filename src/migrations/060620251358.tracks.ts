@@ -11,7 +11,7 @@ export class CreateTracks060620251358 implements MigrationInterface {
 
     await queryRunner.createTable(
       new Table({
-        name: 'tracks',
+        name: 'track',
         columns: [
           {
             name: 'id',
@@ -46,7 +46,7 @@ export class CreateTracks060620251358 implements MigrationInterface {
     );
 
     await queryRunner.createForeignKey(
-      'tracks',
+      'track',
       new TableForeignKey({
         columnNames: ['artistId'],
         referencedTableName: 'artists',
@@ -57,7 +57,7 @@ export class CreateTracks060620251358 implements MigrationInterface {
     );
 
     await queryRunner.createForeignKey(
-      'tracks',
+      'track',
       new TableForeignKey({
         columnNames: ['albumId'],
         referencedTableName: 'albums',
@@ -69,21 +69,21 @@ export class CreateTracks060620251358 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('tracks');
+    const table = await queryRunner.getTable('track');
 
     const fkArtist = table.foreignKeys.find(
       (fk) => fk.columnNames.indexOf('artistId') !== -1,
     );
     if (fkArtist) {
-      await queryRunner.dropForeignKey('tracks', fkArtist);
+      await queryRunner.dropForeignKey('track', fkArtist);
     }
     const fkAlbum = table.foreignKeys.find(
       (fk) => fk.columnNames.indexOf('albumId') !== -1,
     );
     if (fkAlbum) {
-      await queryRunner.dropForeignKey('tracks', fkAlbum);
+      await queryRunner.dropForeignKey('track', fkAlbum);
     }
 
-    await queryRunner.dropTable('tracks');
+    await queryRunner.dropTable('track');
   }
 }
