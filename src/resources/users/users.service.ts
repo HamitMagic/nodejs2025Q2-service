@@ -36,15 +36,9 @@ export class UsersService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    // const existing = await this.usersRepository.findOne({ where: { login } });
-    // if (existing) {
-    //   throw new HttpException(ERRORS.existingUser, HttpStatus.BAD_REQUEST);
-    // }
     const newUser = this.usersRepository.create({
       login,
       password,
-      // createdAt: new Date(),
-      // updatedAt: new Date(),
     });
     const result = await this.usersRepository.save(newUser);
     return this.deletePassword(result);

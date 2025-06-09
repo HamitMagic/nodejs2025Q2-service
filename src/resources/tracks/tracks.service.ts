@@ -84,15 +84,12 @@ export class TracksService {
     }
     await this.tracksRepository.delete({ id });
 
-    // const allFavorites = await this.favoritesRepository.find({
-    //   where: { tracks: In([id]) },
-    // });
-
-    // for (const fav of allFavorites) {
-    //   fav.tracks = fav.tracks.filter((trackId) => trackId !== id);
-    //   await this.favoritesRepository.save(fav);
-    // }
-
     return { deleted: true };
+  }
+
+  async getByIds(ids: string[]) {
+    return await this.tracksRepository.find({
+      where: { id: In(ids) },
+    });
   }
 }

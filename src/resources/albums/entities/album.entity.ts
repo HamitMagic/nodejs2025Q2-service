@@ -12,7 +12,7 @@ export class Album {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @Column()
@@ -24,7 +24,7 @@ export class Album {
   @ManyToOne(() => Artist, {
     nullable: true,
     onDelete: 'SET NULL',
-    onUpdate: 'CASCADE',
+    eager: true,
   })
   @JoinColumn({ name: 'artistId' })
   artist: Artist | null;

@@ -79,15 +79,13 @@ export class AlbumsService {
       throw new HttpException(ERRORS.notFound('Album'), HttpStatus.NOT_FOUND);
     }
 
-    const favsWithAlbums = await this.favoritesRepository.find({
-      where: { albums: In([id]) },
-    });
-    for (const favorite of favsWithAlbums) {
-      favorite.artists = favorite.artists.filter((albumId) => albumId !== id);
-      await this.favoritesRepository.save(favorite);
-    }
-
     await this.albumsRepository.delete({ id });
     return { deleted: true };
+  }
+
+  async getByIds(ids: string[]) {
+    return await this.albumsRepository.find({
+      where: { id: In(ids) },
+    });
   }
 }

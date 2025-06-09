@@ -94,15 +94,14 @@ export class ArtistsService {
     if (!currentArtist) {
       throw new HttpException(ERRORS.notFound('Artist'), HttpStatus.NOT_FOUND);
     }
-    const favsWithArtist = await this.favoritesRepository.find({
-      where: { artists: In([id]) },
-    });
-    for (const favorite of favsWithArtist) {
-      favorite.artists = favorite.artists.filter((artistId) => artistId !== id);
-      await this.favoritesRepository.save(favorite);
-    }
 
     await this.artistsRepository.delete({ id });
     return { deleted: true };
+  }
+
+  async getByIds(ids: string[]) {
+    return await this.artistsRepository.find({
+      where: { id: In(ids) },
+    });
   }
 }
