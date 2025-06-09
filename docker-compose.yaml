@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  db:
+    build: 
+      context: .
+      dockerfile: Dockerfile.db
+    restart: always
+    container_name: homeLibrary-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  app:
+  # pushed to https://hub.docker.com/repository/docker/hamitmagic/nodejs2025q2-service/general
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: homeLibrary
+    depends_on:
+      - db
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASS: ${DATABASE_PASS}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_SYNCHRONIZE: false
+    ports:
+      - "4000:4000"
+    networks:
+      - app-network
+    restart: always
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:
+    driver: bridge
