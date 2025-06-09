@@ -20,6 +20,7 @@ services:
       - app-network
 
   app:
+  # pushed to https://hub.docker.com/repository/docker/hamitmagic/nodejs2025q2-service/general
     build:
       context: .
       dockerfile: Dockerfile
