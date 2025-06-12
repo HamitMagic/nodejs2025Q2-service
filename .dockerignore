@@ -1,0 +1,42 @@
+# dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# docker files
+docker-compose.yml
+docker-compose.dev.yml
+Dockerfile
+Dockerfile.db
+Dockerfile.dev
+
+# system files
+.DS_Store
+Thumbs.db
+
+# ide
+.idea
+.vscode
+*.swp
+*.swo
+
+# other directories
+dist
+build
+coverage
+.cache
+
+# Git
+.git
+.gitignore
+
+# other files
+*.log
+*.md
+!README.md

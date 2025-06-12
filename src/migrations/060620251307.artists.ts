@@ -7,7 +7,7 @@ export class CreateArtists060620251307 implements MigrationInterface {
       CREATE TABLE "artist" (
         "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         "name" VARCHAR NOT NULL,
-        "grammu" BOOLEAN NOT NULL DEFAULT false
+        "grammy" BOOLEAN NOT NULL DEFAULT false
       );
     `);
   }
