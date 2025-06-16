@@ -96,7 +96,7 @@ export class UsersService {
     const currentUser = await this.usersRepository.findOne({ where: { id } });
     if (!currentUser) {
       throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
-    } else if (!this.comparePassword(oldPassword, currentUser.password)) {
+    } else if (!(await this.comparePassword(updateUserDto.oldPassword, currentUser.password))) {
       throw new HttpException(ERRORS.notCorrectPassword, HttpStatus.FORBIDDEN);
     }
     currentUser.password = await this.hashPassword(newPassword);

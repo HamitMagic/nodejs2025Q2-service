@@ -11,6 +11,8 @@ import { typeOrmConfig } from './config/typeorm.config';
 import { LoggingService } from './services/logging/logging.service';
 import { AuthService } from './resources/auth/auth.service';
 import { AuthModule } from './resources/auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './guards/auth/auth.guard';
 
 @Module({
   imports: [
@@ -25,6 +27,15 @@ import { AuthModule } from './resources/auth/auth.module';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, LoggingService, AuthService],
+  providers: [
+    AppService,
+    LoggingService,
+    AuthService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    }
+  
+  ],
 })
 export class AppModule {}

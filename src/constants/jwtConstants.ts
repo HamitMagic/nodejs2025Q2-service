@@ -5,5 +5,5 @@ export const JWT = {
     accessInspireIn: process.env.TOKEN_EXPIRE_TIME ?? '5h',
     refreshInspireIn: process.env.TOKEN_REFRESH_EXPIRE_TIME ?? '48h',
 
-    salt: process.env.CRYPT_SALT ?? 10,
+    salt: parseInt(process.env.CRYPT_SALT) ?? 10,
 }

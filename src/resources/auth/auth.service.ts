@@ -26,7 +26,8 @@ export class AuthService {
     const refreshToken = await this.jwtService.signAsync({...payload, accessToken}, {
       expiresIn: JWT.refreshInspireIn
     });
-    return {refreshToken, accessToken} as Token;
+    console.log(accessToken)
+    return { refreshToken, accessToken, id: newUser.id };
   };
 
   async findByLoginPassword(user: CreateUserDto) {
@@ -36,7 +37,8 @@ export class AuthService {
     const refreshToken = await this.jwtService.signAsync({...payload, accessToken}, {
       expiresIn: JWT.refreshInspireIn
     });
-    return {refreshToken, accessToken} as Token;
+    console.log(refreshToken)
+    return { refreshToken, accessToken, id: newUser.id };
   };
 
   async RefreshTokens(token: string) {
