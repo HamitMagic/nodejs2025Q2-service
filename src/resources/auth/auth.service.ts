@@ -5,6 +5,7 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { Token } from './dto/token.dto';
 import 'dotenv/config';
+import { hash } from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +33,6 @@ export class AuthService {
   };
 
   async findByLoginPassword(user: CreateUserDto) {
-    try {
       const newUser = await this.userService.findByLoginPassword(user);
       const payload = { sub: newUser.id, login: newUser.login };
       const accessToken = await this.jwtService.signAsync(payload);
@@ -40,10 +40,6 @@ export class AuthService {
         expiresIn: this.refreshExpireAt
       });
       return {refreshToken, accessToken} as Token;
-    } catch (error) {
-      if (error.status === 404) throw new HttpException('Access denied', HttpStatus.FORBIDDEN);
-      throw error;
-    }
   };
 
   async RefreshTokens(token: string) {

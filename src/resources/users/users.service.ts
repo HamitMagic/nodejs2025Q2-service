@@ -6,6 +6,7 @@ import { validateUUID } from 'src/utils/utils';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ERRORS } from 'src/constants/errorMessages';
+import { hash, compare } from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -15,6 +16,12 @@ export class UsersService {
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
   ) {}
 
+  private async hashPassword(password: string) {
+    return await hash(password, this.salt)
+  };
+  private async comparePassword(password: string, hashed: string) {
+    return await compare(password, hashed)
+  };
   private deletePassword(user: User) {
     return {
       login: user.login,
@@ -40,7 +47,7 @@ export class UsersService {
     }
     const newUser = this.usersRepository.create({
       login,
-      password,
+      password: await this.hashPassword(password),
     });
     const result = await this.usersRepository.save(newUser);
     return this.deletePassword(result);
@@ -70,11 +77,11 @@ export class UsersService {
     }
 
     const currentUser = await this.usersRepository.findOne({
-      where: { login, password },
+      where: { login },
     });
     if (!currentUser) {
       throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
-    }
+    } else if (!this.comparePassword(password, currentUser.password)) throw new HttpException(ERRORS.notCorrectPassword, HttpStatus.FORBIDDEN);
     return this.deletePassword(currentUser);
   }
 
@@ -90,10 +97,10 @@ export class UsersService {
     const currentUser = await this.usersRepository.findOne({ where: { id } });
     if (!currentUser) {
       throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
-    } else if (currentUser.password !== oldPassword) {
+    } else if (!this.comparePassword(oldPassword, currentUser.password)) {
       throw new HttpException(ERRORS.notCorrectPassword, HttpStatus.FORBIDDEN);
     }
-    currentUser.password = newPassword;
+    currentUser.password = await this.hashPassword(newPassword);
     currentUser.version += 1;
     currentUser.updatedAt = new Date(Date.now());
     const result = await this.usersRepository.save(currentUser);
