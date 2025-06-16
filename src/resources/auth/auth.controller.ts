@@ -1,6 +1,5 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, HttpStatus, HttpCode } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Token } from './dto/token.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { Public } from 'src/decorators/public';
 
@@ -18,18 +17,19 @@ export class AuthController {
     return this.authService.create(body);
   }
 
+  @Public()
   @Post('login')
   login(
-    @Body()
-    body: CreateUserDto,
+    @Body() body: CreateUserDto,
   ) {
     return this.authService.findByLoginPassword(body);
   }
 
+  @Public()
   @Post('refresh')
+  @HttpCode(HttpStatus.OK)
   refresh(
-    @Body()
-    body: Token,
+    @Body() body: {refreshToken: string},
   ) {
     return this.authService.RefreshTokens(body.refreshToken);
   }

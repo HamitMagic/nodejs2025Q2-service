@@ -21,6 +21,7 @@ async function bootstrap() {
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   await app.listen(PORT);
-  console.log(`server runs on port ${PORT}`);
+  console.log(`server runs on http://localhost:${PORT}`);
+  console.log(`swagger at http://localhost:${PORT}/doc`);
 }
 bootstrap();
