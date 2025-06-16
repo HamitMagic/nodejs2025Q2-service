@@ -4,4 +4,5 @@ export const ERRORS = {
   existingUser: 'User with this login already exists',
   notCorrectPassword: 'Password is not correct',
   alreadyExists: (str: string) => `${str} is already in favorites`,
+  unknownError: 'oops something was wrong, try again later'
 };

@@ -9,6 +9,8 @@ import { ERRORS } from 'src/constants/errorMessages';
 
 @Injectable()
 export class UsersService {
+  private readonly salt = process.env.CRYPT_SALT ?? 10;
+
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
   ) {}
@@ -105,6 +107,5 @@ export class UsersService {
       throw new HttpException(ERRORS.notFound('User'), HttpStatus.NOT_FOUND);
     }
     return await this.usersRepository.delete({ id });
-    return { deleted: true };
   }
 }

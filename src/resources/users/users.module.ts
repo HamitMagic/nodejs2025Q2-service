@@ -9,5 +9,6 @@ import { Favorite } from '../favorites/entities/favorite.entity';
   imports: [TypeOrmModule.forFeature([User, Favorite])],
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}

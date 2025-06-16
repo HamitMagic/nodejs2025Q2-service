@@ -8,6 +8,9 @@ import { TracksModule } from './resources/tracks/tracks.module';
 import { FavoritesModule } from './resources/favorites/favorites.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
+import { LoggingService } from './services/logging/logging.service';
+import { AuthService } from './resources/auth/auth.service';
+import { AuthModule } from './resources/auth/auth.module';
 
 @Module({
   imports: [
@@ -19,8 +22,9 @@ import { typeOrmConfig } from './config/typeorm.config';
     AlbumsModule,
     TracksModule,
     FavoritesModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, LoggingService, AuthService],
 })
 export class AppModule {}

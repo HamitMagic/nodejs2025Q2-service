@@ -1,17 +1,18 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { Token } from './dto/token.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
-@Controller('/auth')
+@Controller('auth')
 export class AuthController {
-  constructor(private userService: UsersService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
   create(
     @Body()
     body: CreateUserDto,
   ) {
-    return this.userService.create(body);
+    return this.authService.create(body);
   }
 
   @Post('login')
@@ -19,6 +20,14 @@ export class AuthController {
     @Body()
     body: CreateUserDto,
   ) {
-    return this.userService.findByLoginPassword(body);
+    return this.authService.findByLoginPassword(body);
+  }
+
+  @Post('refresh')
+  refresh(
+    @Body()
+    body: Token,
+  ) {
+    return this.authService.RefreshTokens(body.refreshToken);
   }
 }
