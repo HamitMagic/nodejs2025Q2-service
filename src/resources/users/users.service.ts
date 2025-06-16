@@ -7,17 +7,16 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ERRORS } from 'src/constants/errorMessages';
 import { hash, compare } from 'bcrypt';
+import { JWT } from 'src/constants/jwtConstants';
 
 @Injectable()
 export class UsersService {
-  private readonly salt = process.env.CRYPT_SALT ?? 10;
-
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
   ) {}
 
   private async hashPassword(password: string) {
-    return await hash(password, this.salt)
+    return await hash(password, JWT.salt)
   };
   private async comparePassword(password: string, hashed: string) {
     return await compare(password, hashed)

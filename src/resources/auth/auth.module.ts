@@ -6,13 +6,14 @@ import 'dotenv/config';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JWT } from 'src/constants/jwtConstants';
 
 @Module({
   imports: [
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET_KEY ?? 'secret',
-      signOptions: { expiresIn: process.env.TOKEN_EXPIRE_TIME ?? '5h' },
+      secret: JWT.secretKey,
+      signOptions: { expiresIn: JWT.accessInspireIn },
     }),
     TypeOrmModule.forFeature([User])
   ],
