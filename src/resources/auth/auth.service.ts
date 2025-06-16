@@ -23,7 +23,7 @@ export class AuthService {
       ERRORS.unknownError,
       HttpStatus.INTERNAL_SERVER_ERROR,
     );
-    const payload = { sub: newUser.id, username: newUser.login };
+    const payload = { sub: newUser.id, login: newUser.login };
     const accessToken = await this.jwtService.signAsync(payload);
     const refreshToken = await this.jwtService.signAsync({...payload, accessToken}, {
       expiresIn: this.refreshExpireAt
@@ -34,7 +34,7 @@ export class AuthService {
   async findByLoginPassword(user: CreateUserDto) {
     try {
       const newUser = await this.userService.findByLoginPassword(user);
-      const payload = { sub: newUser.id, username: newUser.login };
+      const payload = { sub: newUser.id, login: newUser.login };
       const accessToken = await this.jwtService.signAsync(payload);
       const refreshToken = await this.jwtService.signAsync({...payload, accessToken}, {
         expiresIn: this.refreshExpireAt
@@ -49,6 +49,15 @@ export class AuthService {
   async RefreshTokens(token: string) {
     if (!token) throw new HttpException('Access denied', HttpStatus.UNAUTHORIZED);
 
-    
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+      const accessToken = await this.jwtService.signAsync(payload);
+      const refreshToken = await this.jwtService.signAsync({...payload, accessToken}, {
+        expiresIn: this.refreshExpireAt
+      });
+      return {refreshToken, accessToken} as Token;
+    } catch (error) {
+      throw new HttpException('Access denied', HttpStatus.FORBIDDEN)
+    }
   };
 }
